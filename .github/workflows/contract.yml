@@ -1,0 +1,64 @@
+name: contract
+
+# Checks the policy contract and builds the deployable .wasm in the cloud,
+# so nothing needs to be installed locally. Download the result from the
+# run's "Artifacts" section.
+#
+# Tollkeeper in its own repo:      leave PROJECT_DIR as ".".
+# Tollkeeper inside another repo:  copy this file to that repo's
+#                                  .github/workflows/ and set PROJECT_DIR to the
+#                                  folder that holds Cargo.toml (e.g. "tollkeeper").
+
+env:
+  PROJECT_DIR: .
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.PROJECT_DIR }}
+
+      - name: Format
+        run: cargo fmt --check
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Tests
+        run: cargo test
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Dependency audit
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Build wasm
+        run: |
+          cargo install cargo-near --locked
+          cargo near build non-reproducible-wasm
+        working-directory: ${{ env.PROJECT_DIR }}/contracts/policy
+
+      - name: Upload wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: tollkeeper-policy-wasm
+          path: "**/target/near/**/*.wasm"
+          if-no-files-found: error

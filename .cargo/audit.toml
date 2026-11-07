@@ -1,0 +1,9 @@
+# Advisories reviewed and accepted. Re-check whenever near-sdk is upgraded.
+[advisories]
+ignore = [
+  # crypto-bigint 0.5.5 timing issue. Pulled in by near-sdk -> near-vm-runner ->
+  # p256, which is only part of the native (unit-test) build. It is not in the
+  # wasm contract's dependency tree, and the fix (>=0.7.6) is outside the semver
+  # range that elliptic-curve 0.13 allows, so it cannot be upgraded from here.
+  "RUSTSEC-2026-0387",
+]
