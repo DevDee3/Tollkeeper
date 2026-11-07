@@ -28,9 +28,25 @@ jobs:
           targets: wasm32-unknown-unknown
           components: clippy, rustfmt
 
+      # cargo-near pulls in a USB library (hidapi, used for Ledger signing) that
+      # needs these system packages to compile. Without them its install fails.
+      - name: System packages for cargo-near
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libudev-dev pkg-config
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ${{ env.PROJECT_DIR }}
+
+      # The two tools below take minutes to compile, so keep them between runs.
+      - name: Cache cargo tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-near
+            ~/.cargo/bin/cargo-audit
+          key: cargo-tools-${{ runner.os }}-v1
 
       - name: Format
         run: cargo fmt --check
@@ -46,13 +62,13 @@ jobs:
 
       - name: Dependency audit
         run: |
-          cargo install cargo-audit --locked
+          command -v cargo-audit || cargo install cargo-audit --locked
           cargo audit
         working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Build wasm
         run: |
-          cargo install cargo-near --locked
+          command -v cargo-near || cargo install cargo-near --locked
           cargo near build non-reproducible-wasm
         working-directory: ${{ env.PROJECT_DIR }}/contracts/policy
 
