@@ -1,32 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  MockTollkeeper,
-  formatNear,
-  parseNear,
-  type Config,
-  type OwnerClient,
-  type PaymentRecord,
-} from "@tollkeeper/shared";
+import { MockTollkeeper, parseNear, type OwnerClient, type PaymentRecord } from "@tollkeeper/shared";
 import { DEMO, NaivePlanner, createDemoWorld, runAgent, type Planner } from "@tollkeeper/agent";
+import { announcement } from "./derive";
+import type { Notice, View } from "./types";
 
 /** Pause between the agent's steps so a person can follow what happens. */
 const PACE_MS = 1100;
-
-export interface View {
-  config: Config;
-  allowlist: string[];
-  /** Newest first. */
-  log: PaymentRecord[];
-  balance: bigint;
-}
-
-export interface Notice {
-  id: number;
-  tone: "stop" | "go" | "info";
-  text: string;
-}
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -81,13 +62,10 @@ export function useDemo() {
 
   const announce = useCallback(
     (record: PaymentRecord) => {
-      const what = `${formatNear(record.amount)} to ${record.recipient}`;
-      if (record.status === "Blocked") {
-        setStopHits((n) => n + 1);
-        say("stop", `Stopped ${what}. ${record.reason}.`);
-      } else if (record.status === "Pending") {
-        say("info", `${what} is waiting for your approval.`);
-      }
+      const a = announcement(record);
+      if (!a) return;
+      if (record.status === "Blocked") setStopHits((n) => n + 1);
+      say(a.tone, a.text);
     },
     [say],
   );

@@ -1,28 +1,12 @@
+import { fileURLToPath } from "node:url";
 import { MockTollkeeper, formatNear, parseNear } from "@tollkeeper/shared";
 import { runAgent } from "./agent";
-import { createDemoWorld, DEMO, NaivePlanner } from "./scenario";
-import type { AgentEvent } from "./types";
+import { loadEnvFile } from "./env";
+import { choosePlanner } from "./planner";
+import { show } from "./print";
+import { createDemoWorld, DEMO } from "./scenario";
 
-const ICON = { Paid: "PAID   ", Pending: "WAITING", Blocked: "BLOCKED", Rejected: "DECLINED" } as const;
-
-function show(event: AgentEvent): void {
-  switch (event.kind) {
-    case "read":
-      console.log(`  read     ${event.source}`);
-      break;
-    case "payment": {
-      const r = event.record;
-      console.log(`  ${ICON[r.status]}  ${formatNear(r.amount).padEnd(9)} -> ${r.recipient}`);
-      console.log(`           ${r.reason}`);
-      break;
-    }
-    case "error":
-      console.log(`  error    ${event.message}`);
-      break;
-    case "finished":
-      console.log(`  done     ${event.summary}`);
-  }
-}
+loadEnvFile(fileURLToPath(new URL("../.env", import.meta.url)));
 
 const chain = new MockTollkeeper({
   owner: DEMO.owner,
@@ -34,8 +18,17 @@ const chain = new MockTollkeeper({
 const owner = chain.ownerClient();
 for (const vendor of Object.values(DEMO.vendors)) await owner.addRecipient(vendor);
 
-console.log("Rules: 10 NEAR a day, anything over 2 NEAR needs your approval, allowlisted recipients only\n");
-await runAgent({ client: chain.agentClient(), planner: new NaivePlanner(), world: createDemoWorld(), onEvent: show });
+let chosen;
+try {
+  chosen = choosePlanner(process.argv.slice(2), process.env, DEMO.vendors);
+} catch (err) {
+  console.error(`\n${err instanceof Error ? err.message : String(err)}\n`);
+  process.exit(1);
+}
+
+console.log("Rules: 10 NEAR a day, anything over 2 NEAR needs your approval, allowlisted recipients only");
+console.log(`Agent: ${chosen.label}\n`);
+await runAgent({ client: chain.agentClient(), planner: chosen.planner, world: createDemoWorld(), onEvent: show });
 
 const cfg = await owner.getConfig();
 console.log(`\nSpent today ${formatNear(cfg.spent_today)} of ${formatNear(cfg.daily_cap)}.`);

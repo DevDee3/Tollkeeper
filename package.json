@@ -3,13 +3,22 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": ["shared", "agent", "web"],
+  "workspaces": [
+    "shared",
+    "chain",
+    "agent",
+    "web"
+  ],
   "scripts": {
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm test --workspaces",
     "demo": "npm run demo -w agent",
     "dev": "npm run dev -w web",
-    "build": "npm run build -w web"
+    "build": "npm run build -w web",
+    "demo:live": "npm run live -w agent",
+    "make-agent-key": "npm run make-agent-key -w agent",
+    "demo:llm": "npm run demo:llm -w agent",
+    "demo:live:llm": "npm run live:llm -w agent"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

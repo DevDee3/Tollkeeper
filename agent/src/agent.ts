@@ -25,7 +25,15 @@ export async function runAgent(opts: RunOptions): Promise<AgentEvent[]> {
   };
 
   for (let step = 0; step < maxSteps; step++) {
-    const action = await planner.next(history);
+    let action;
+    try {
+      action = await planner.next(history);
+    } catch (err) {
+      // A planner that cannot decide (for example, the model is unreachable) ends the run cleanly.
+      emit({ kind: "error", message: err instanceof Error ? err.message : String(err) });
+      emit({ kind: "finished", summary: "Stopped because the planner could not decide the next step." });
+      return history;
+    }
 
     try {
       if (action.kind === "finish") {

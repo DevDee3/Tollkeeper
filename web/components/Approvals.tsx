@@ -42,7 +42,7 @@ export function Approvals({ pending, onApprove, onDecline }: Props) {
                 <p className="muted">{p.reason}</p>
                 {errors[p.id] && (
                   <p className="error" role="alert">
-                    Couldn&apos;t approve: {errors[p.id]}. Change the rules below, then try again.
+                    Couldn&apos;t do that. {errors[p.id]}
                   </p>
                 )}
               </div>

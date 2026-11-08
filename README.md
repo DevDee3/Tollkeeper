@@ -20,8 +20,10 @@ can always show what the agent tried and why it was stopped.
 ```
 contracts/policy   Rust contract (near-sdk). The source of truth for the rules.
 shared/            TypeScript types for the contract + an in-memory mock of it.
+chain/             Talks to the deployed contract: views, and the agent's restricted client.
 agent/             The agent loop, a demo scenario, and the planner interface.
-web/               Dashboard (Next.js).
+docs/              live-setup.md (setup on NEAR testnet) and submission.md (video script, post, checklist).
+web/               Dashboard (Next.js). Demo mode by default, live mode with a wallet.
 ```
 
 `shared` is what keeps the pieces in step: the contract's JSON shapes live in
@@ -45,6 +47,8 @@ storage. The daily cap resets on UTC day boundaries.
 npm install
 npm run demo        # the agent gets tricked by a poisoned page; the policy holds
 npm run dev         # dashboard at http://localhost:3000 (demo mode, nothing is real)
+npm run demo:live   # the same story against the real contract (see docs/live-setup.md)
+npm run demo:llm    # same, with a real model deciding each step (needs ANTHROPIC_API_KEY)
 npm test
 npm run typecheck
 ```
@@ -70,11 +74,15 @@ repo. GitHub only runs workflows from the repo root, so copy
 
 ## Known limits
 
+- Wallet connection is built on NEAR Connect and has only been tested against a mocked
+  network. If a wallet will not connect, approve from the command line (docs/live-setup.md).
 - Native NEAR only for now. Token (NEP-141) and cross-chain payments are
   planned through NEAR Intents.
 - A transfer to an account that does not exist is refunded by the protocol
   but still counts toward the day's total.
-- The demo planner is scripted. It stands in for a model-backed planner that
-  uses the same interface.
+- The default planner is scripted so the demo plays out the same way every time. `--llm`
+  swaps in a real model through the same interface. Its prompt has no defence against hidden
+  instructions on purpose, since the point is that the payment policy holds when a model slips.
+  A strong model may ignore the poisoned page, in which case you see an uneventful run, not an attack.
 - `RUSTSEC-2026-0387` (crypto-bigint) is accepted in `.cargo/audit.toml`: it
   arrives through NEAR's native test tooling, not the wasm contract.

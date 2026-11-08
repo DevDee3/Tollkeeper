@@ -43,3 +43,21 @@ test("counts and summary line read in plain language", () => {
 test("withoutUnit drops the trailing unit", () => {
   assert.equal(withoutUnit("6.25 NEAR"), "6.25");
 });
+
+test("stopped and waiting requests get a plain-language alert; paid and declined do not", async () => {
+  const { announcement } = await import("../lib/derive");
+  assert.deepEqual(announcement({ ...rec(0, 40, "Blocked"), reason: "Recipient is not on the allowlist" }), {
+    tone: "stop",
+    text: "Stopped 40 NEAR to r0.testnet. Recipient is not on the allowlist.",
+  });
+  assert.deepEqual(announcement(rec(1, 6, "Pending")), { tone: "info", text: "6 NEAR to r1.testnet is waiting for your approval." });
+  assert.equal(announcement(rec(2, 1, "Paid")), null);
+  assert.equal(announcement(rec(3, 1, "Rejected")), null);
+});
+
+test("unseen returns only newer records, oldest first", async () => {
+  const { unseen } = await import("../lib/derive");
+  const log = [rec(4, 1, "Paid"), rec(3, 1, "Paid"), rec(2, 1, "Paid"), rec(1, 1, "Paid")];
+  assert.deepEqual(unseen(log, 2).map((r) => r.id), [3, 4]);
+  assert.deepEqual(unseen(log, 4), []);
+});

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Notice } from "../lib/useDemo";
+import type { Notice } from "../lib/types";
 
 const VISIBLE_MS = 6000;
 

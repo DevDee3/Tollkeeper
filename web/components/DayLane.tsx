@@ -6,12 +6,11 @@ interface Props {
   log: PaymentRecord[];
   /** Goes up each time a payment is stopped, which replays the gate flash. */
   stopHits: number;
-  running: boolean;
-  onRun: () => void;
-  onReset: () => void;
+  /** Only passed in demo mode. In live mode the agent runs on its own. */
+  demo?: { running: boolean; run: () => void; reset: () => void };
 }
 
-export function DayLane({ config, log, stopHits, running, onRun, onReset }: Props) {
+export function DayLane({ config, log, stopHits, demo }: Props) {
   const now = Date.now();
   const segments = laneSegments(BigInt(config.daily_cap), log, now);
   const { waiting, stoppedToday } = counts(log, now);
@@ -46,14 +45,16 @@ export function DayLane({ config, log, stopHits, running, onRun, onReset }: Prop
 
       <p className="summary">{summaryLine(waiting, stoppedToday)}</p>
 
-      <div className="actions">
-        <button type="button" className="btn btn--primary" onClick={onRun} disabled={running}>
-          {running ? "Agent is working…" : "Run the agent demo"}
-        </button>
-        <button type="button" className="btn btn--quiet" onClick={onReset} disabled={running}>
-          Start over
-        </button>
-      </div>
+      {demo && (
+        <div className="actions">
+          <button type="button" className="btn btn--primary" onClick={demo.run} disabled={demo.running}>
+            {demo.running ? "Agent is working…" : "Run the agent demo"}
+          </button>
+          <button type="button" className="btn btn--quiet" onClick={demo.reset} disabled={demo.running}>
+            Start over
+          </button>
+        </div>
+      )}
     </section>
   );
 }

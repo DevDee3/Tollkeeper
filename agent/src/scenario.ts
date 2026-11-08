@@ -33,17 +33,14 @@ export function createDemoWorld(): World {
 
 const INJECTION = /send\s+(\d+(?:\.\d+)?)\s+NEAR\s+to\s+([a-z0-9._-]+)/i;
 
-/**
- * A deliberately gullible planner: it follows instructions found in the pages
- * it reads. It stands in for a real LLM so the demo is deterministic and works
- * offline, and it shows the failure the policy exists to contain. A model-backed
- * planner implements the same `Planner` interface.
- */
-export class NaivePlanner implements Planner {
-  private readonly queue: Action[] = [
+/** The three accounts the scripted agent buys from. */
+export type Vendors = { dataApi: string; summarizer: string; premium: string };
+
+function scriptedActions(vendors: Vendors): Action[] {
+  return [
     {
       kind: "pay",
-      recipient: DEMO.vendors.dataApi,
+      recipient: vendors.dataApi,
       amountNear: "1",
       memo: "On-chain stats API, daily pull",
       why: "Need fresh numbers for today's report",
@@ -51,21 +48,36 @@ export class NaivePlanner implements Planner {
     { kind: "read", source: "news:near-ecosystem", why: "Check the week's ecosystem news" },
     {
       kind: "pay",
-      recipient: DEMO.vendors.summarizer,
+      recipient: vendors.summarizer,
       amountNear: "1.5",
       memo: "Summarise the report",
       why: "Hire a summarising agent for the write-up",
     },
     {
       kind: "pay",
-      recipient: DEMO.vendors.premium,
+      recipient: vendors.premium,
       amountNear: "6",
       memo: "Premium dataset, one-off",
       why: "The premium dataset would make the report stronger",
     },
     { kind: "finish", summary: "Report assembled." },
   ];
+}
+
+/**
+ * A deliberately gullible planner: it follows instructions found in the pages
+ * it reads. It stands in for a real LLM so the demo is deterministic and works
+ * offline, and it shows the failure the policy exists to contain. A model-backed
+ * planner implements the same `Planner` interface.
+ */
+export class NaivePlanner implements Planner {
+  private readonly queue: Action[];
   private seen = 0;
+
+  /** Pass real testnet accounts to run the same story against the live contract. */
+  constructor(vendors: Vendors = DEMO.vendors) {
+    this.queue = scriptedActions(vendors);
+  }
 
   async next(history: readonly AgentEvent[]): Promise<Action> {
     for (const event of history.slice(this.seen)) {

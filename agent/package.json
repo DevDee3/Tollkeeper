@@ -8,9 +8,15 @@
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "tsx --test test/*.test.ts",
-    "demo": "tsx src/demo.ts"
+    "demo": "tsx src/demo.ts",
+    "live": "tsx src/live.ts",
+    "make-agent-key": "tsx scripts/make-agent-key.ts",
+    "demo:llm": "tsx src/demo.ts --llm",
+    "live:llm": "tsx src/live.ts --llm"
   },
   "dependencies": {
-    "@tollkeeper/shared": "*"
+    "@tollkeeper/shared": "*",
+    "@tollkeeper/chain": "*",
+    "near-api-js": "7.4.0"
   }
 }

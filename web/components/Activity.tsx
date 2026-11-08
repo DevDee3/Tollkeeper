@@ -9,12 +9,12 @@ const LABEL: Record<Status, string> = {
   Rejected: "Declined",
 };
 
-export function Activity({ log }: { log: PaymentRecord[] }) {
+export function Activity({ log, emptyHint }: { log: PaymentRecord[]; emptyHint: string }) {
   return (
     <section className="section" aria-labelledby="activity-title">
       <h2 id="activity-title">Activity</h2>
       {log.length === 0 ? (
-        <p className="empty">No activity yet. Run the agent demo to watch it work.</p>
+        <p className="empty">{emptyHint}</p>
       ) : (
         <ul className="list">
           {log.map((r) => (

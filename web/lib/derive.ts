@@ -1,4 +1,4 @@
-import type { PaymentRecord } from "@tollkeeper/shared";
+import { formatNear, type PaymentRecord } from "@tollkeeper/shared";
 
 const MS_PER_DAY = 86_400_000;
 const MIN_PCT = 0.8; // keep very small payments visible
@@ -68,4 +68,22 @@ export function withoutUnit(formatted: string): string {
 
 export function clockTime(timestampMs: number): string {
   return new Date(timestampMs).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+export interface Announcement {
+  tone: "stop" | "info";
+  text: string;
+}
+
+/** What to tell the person when the agent's request is stopped or needs them. Paid and declined need no alert. */
+export function announcement(record: PaymentRecord): Announcement | null {
+  const what = `${formatNear(record.amount)} to ${record.recipient}`;
+  if (record.status === "Blocked") return { tone: "stop", text: `Stopped ${what}. ${record.reason}.` };
+  if (record.status === "Pending") return { tone: "info", text: `${what} is waiting for your approval.` };
+  return null;
+}
+
+/** Records newer than the last one the person has seen, oldest first. */
+export function unseen(log: readonly PaymentRecord[], lastSeenId: number): PaymentRecord[] {
+  return log.filter((r) => r.id > lastSeenId).sort((a, b) => a.id - b.id);
 }
